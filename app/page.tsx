@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 
-const API = "http://localhost:8000";
+const API = "/api";
 
 const api = {
   getTopics: () => fetch(`${API}/topics`).then(r => r.json()),
@@ -11,7 +11,6 @@ const api = {
   getStats: () => fetch(`${API}/stats`).then(r => r.json()),
   search: (q) => fetch(`${API}/search?q=${encodeURIComponent(q)}`).then(r => r.json()),
   runNow: () => fetch(`${API}/scheduler/run-now`, { method: "POST" }).then(r => r.json()),
-  health: () => fetch(`${API}/health`).then(r => r.json()),
 };
 
 const TOPIC_COLORS = {
