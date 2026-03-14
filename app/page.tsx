@@ -1,0 +1,392 @@
+'use client';
+
+import { useState, useEffect, useCallback } from "react";
+
+const API = "http://localhost:8000";
+
+const api = {
+  getTopics: () => fetch(`${API}/topics`).then(r => r.json()),
+  getArticles: (topic) => fetch(`${API}/articles${topic ? `?topic=${topic}` : ""}`).then(r => r.json()),
+  getArticle: (id) => fetch(`${API}/articles/${id}`).then(r => r.json()),
+  getStats: () => fetch(`${API}/stats`).then(r => r.json()),
+  search: (q) => fetch(`${API}/search?q=${encodeURIComponent(q)}`).then(r => r.json()),
+  runNow: () => fetch(`${API}/scheduler/run-now`, { method: "POST" }).then(r => r.json()),
+  health: () => fetch(`${API}/health`).then(r => r.json()),
+};
+
+const TOPIC_COLORS = {
+  Technology: "#3B82F6",
+  Economics: "#10B981",
+  Politics: "#F59E0B",
+  Health: "#EF4444",
+  Climate: "#06B6D4",
+  Other: "#8B5CF6",
+};
+
+function TopBar({ onSearch, onRefresh, refreshing, view, setView }) {
+  const [q, setQ] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => onSearch(q), 300);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  return (
+    <header style={{
+      position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+      background: "rgba(255,255,255,0.92)", backdropFilter: "blur(12px)",
+      borderBottom: "1px solid #E5E7EB",
+      display: "flex", alignItems: "center", gap: 16,
+      padding: "0 32px", height: 56,
+    }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginRight: 24 }}>
+        <span style={{ fontFamily: "'Georgia', serif", fontSize: 20, fontWeight: 700, letterSpacing: "-0.5px", color: "#111" }}>NEWS</span>
+        <span style={{ fontFamily: "'Georgia', serif", fontSize: 20, fontWeight: 400, color: "#6B7280" }}>FILE</span>
+      </div>
+
+      <nav style={{ display: "flex", gap: 4 }}>
+        {["dashboard", "feed", "search"].map(v => (
+          <button key={v} onClick={() => setView(v)} style={{
+            padding: "5px 14px", borderRadius: 6, border: "none", cursor: "pointer",
+            fontSize: 13, fontWeight: 500, textTransform: "capitalize",
+            background: view === v ? "#111" : "transparent",
+            color: view === v ? "#fff" : "#6B7280",
+            transition: "all 0.15s",
+          }}>{v}</button>
+        ))}
+      </nav>
+
+      <div style={{ flex: 1 }} />
+
+      {view === "search" && (
+        <input
+          value={q} onChange={e => setQ(e.target.value)}
+          placeholder="Search articles..."
+          style={{
+            width: 280, padding: "7px 14px", borderRadius: 8,
+            border: "1.5px solid #E5E7EB", fontSize: 13, outline: "none",
+            background: "#F9FAFB", color: "#111",
+          }}
+        />
+      )}
+
+      <button onClick={onRefresh} disabled={refreshing} style={{
+        padding: "7px 16px", borderRadius: 8, border: "1.5px solid #E5E7EB",
+        background: "#fff", color: "#374151", fontSize: 13, fontWeight: 500,
+        cursor: refreshing ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6,
+        opacity: refreshing ? 0.6 : 1, transition: "all 0.15s",
+      }}>
+        <span style={{ display: "inline-block", animation: refreshing ? "spin 1s linear infinite" : "none" }}>↻</span>
+        {refreshing ? "Refreshing..." : "Refresh"}
+      </button>
+    </header>
+  );
+}
+
+function StatCard({ label, value, sub, color }) {
+  return (
+    <div style={{
+      background: "#fff", borderRadius: 12, padding: "20px 24px",
+      border: "1px solid #E5E7EB", flex: 1, minWidth: 140,
+    }}>
+      <div style={{ fontSize: 28, fontWeight: 700, color: color || "#111", fontFamily: "'Georgia', serif" }}>{value}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginTop: 2 }}>{label}</div>
+      {sub && <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>{sub}</div>}
+    </div>
+  );
+}
+
+function TopicBar({ topic, count, total, onClick }) {
+  const pct = total ? Math.round((count / total) * 100) : 0;
+  const color = TOPIC_COLORS[topic] || "#8B5CF6";
+  return (
+    <div onClick={onClick} style={{ cursor: "pointer", marginBottom: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>{topic}</span>
+        <span style={{ fontSize: 12, color: "#9CA3AF" }}>{count} articles</span>
+      </div>
+      <div style={{ height: 6, background: "#F3F4F6", borderRadius: 4, overflow: "hidden" }}>
+        <div style={{
+          height: "100%", width: `${pct}%`, background: color,
+          borderRadius: 4, transition: "width 0.6s cubic-bezier(0.4,0,0.2,1)",
+        }} />
+      </div>
+    </div>
+  );
+}
+
+function ArticleRow({ article, onClick }) {
+  const color = TOPIC_COLORS[article.topic] || "#8B5CF6";
+  return (
+    <div onClick={() => onClick(article)} style={{
+      padding: "16px 0", borderBottom: "1px solid #F3F4F6", cursor: "pointer",
+      display: "flex", gap: 14, alignItems: "flex-start",
+      transition: "background 0.1s",
+    }}
+      onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
+      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+    >
+      <div style={{
+        width: 4, height: 44, borderRadius: 2, background: color,
+        flexShrink: 0, marginTop: 2,
+      }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: "#111", lineHeight: 1.4, marginBottom: 4 }}>
+          {article.title}
+        </div>
+        <div style={{ fontSize: 12, color: "#9CA3AF", display: "flex", gap: 10 }}>
+          <span>{article.source}</span>
+          <span>·</span>
+          <span style={{
+            background: `${color}18`, color: color,
+            padding: "1px 8px", borderRadius: 10, fontWeight: 500,
+          }}>{article.topic}</span>
+          {article.word_count && <><span>·</span><span>{article.word_count} words</span></>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ArticleModal({ article, onClose }) {
+  const [full, setFull] = useState(null);
+  useEffect(() => {
+    if (!article) return;
+    api.getArticle(article.id).then(setFull);
+    return () => setFull(null);
+  }, [article?.id]);
+
+  if (!article) return null;
+  const color = TOPIC_COLORS[article.topic] || "#8B5CF6";
+
+  return (
+    <div onClick={onClose} style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)",
+      zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center",
+      padding: 24,
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: "#fff", borderRadius: 16, width: "100%", maxWidth: 680,
+        maxHeight: "85vh", overflow: "hidden", display: "flex", flexDirection: "column",
+        boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+      }}>
+        <div style={{ padding: "24px 28px 16px", borderBottom: "1px solid #F3F4F6" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+            <h2 style={{ fontFamily: "'Georgia', serif", fontSize: 20, fontWeight: 700, color: "#111", lineHeight: 1.4, margin: 0 }}>
+              {article.title}
+            </h2>
+            <button onClick={onClose} style={{
+              border: "none", background: "#F3F4F6", borderRadius: 6,
+              width: 28, height: 28, cursor: "pointer", fontSize: 16, flexShrink: 0,
+              display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7280",
+            }}>×</button>
+          </div>
+          <div style={{ display: "flex", gap: 10, marginTop: 10, alignItems: "center" }}>
+            <span style={{ fontSize: 12, color: "#9CA3AF" }}>{article.source}</span>
+            <span style={{
+              fontSize: 12, background: `${color}18`, color: color,
+              padding: "2px 10px", borderRadius: 10, fontWeight: 600,
+            }}>{article.topic}</span>
+            <a href={article.url} target="_blank" rel="noreferrer" style={{
+              fontSize: 12, color: "#3B82F6", textDecoration: "none", marginLeft: "auto",
+            }}>Read original →</a>
+          </div>
+        </div>
+        <div style={{ padding: "20px 28px", overflowY: "auto", flex: 1 }}>
+          {full ? (
+            <p style={{ fontSize: 14, lineHeight: 1.8, color: "#374151", margin: 0, whiteSpace: "pre-wrap" }}>
+              {full.full_text || full.summary || "No content available."}
+            </p>
+          ) : (
+            <div style={{ color: "#9CA3AF", fontSize: 14 }}>Loading...</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Dashboard({ topics, articles, onTopicClick }) {
+  const total = topics.reduce((s, t) => s + t.count, 0);
+  const sources = {};
+  articles.forEach(a => { sources[a.source] = (sources[a.source] || 0) + 1; });
+  const topSources = Object.entries(sources).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+  return (
+    <div>
+      <div style={{ marginBottom: 28 }}>
+        <h1 style={{ fontFamily: "'Georgia', serif", fontSize: 28, fontWeight: 700, color: "#111", margin: "0 0 4px" }}>
+          Good morning.
+        </h1>
+        <p style={{ fontSize: 14, color: "#9CA3AF", margin: 0 }}>
+          {total} articles tracked across {topics.length} topics
+        </p>
+      </div>
+
+      <div style={{ display: "flex", gap: 12, marginBottom: 28, flexWrap: "wrap" }}>
+        <StatCard label="Total Articles" value={total} color="#111" />
+        <StatCard label="Topics" value={topics.length} color="#3B82F6" />
+        <StatCard label="Top Topic" value={topics[0]?.topic || "—"} sub={`${topics[0]?.count || 0} articles`} color={TOPIC_COLORS[topics[0]?.topic]} />
+        <StatCard label="Sources" value={Object.keys(sources).length} color="#10B981" />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+        <div style={{ background: "#fff", borderRadius: 12, padding: "20px 24px", border: "1px solid #E5E7EB" }}>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: "#374151", margin: "0 0 16px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Articles by Topic
+          </h3>
+          {topics.map(t => (
+            <TopicBar key={t.topic} topic={t.topic} count={t.count} total={total} onClick={() => onTopicClick(t.topic)} />
+          ))}
+        </div>
+
+        <div style={{ background: "#fff", borderRadius: 12, padding: "20px 24px", border: "1px solid #E5E7EB" }}>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: "#374151", margin: "0 0 16px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Top Sources
+          </h3>
+          {topSources.map(([source, count]) => (
+            <div key={source} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #F9FAFB" }}>
+              <span style={{ fontSize: 14, color: "#374151", fontWeight: 500 }}>{source}</span>
+              <span style={{ fontSize: 13, color: "#9CA3AF", background: "#F3F4F6", padding: "2px 10px", borderRadius: 10 }}>{count}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Feed({ topics, articles, onArticleClick }) {
+  const [activeTopic, setActiveTopic] = useState(null);
+  const filtered = activeTopic ? articles.filter(a => a.topic === activeTopic) : articles;
+
+  return (
+    <div style={{ display: "flex", gap: 24 }}>
+      <div style={{ width: 200, flexShrink: 0 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Topics</div>
+        <button onClick={() => setActiveTopic(null)} style={{
+          display: "block", width: "100%", textAlign: "left", padding: "7px 10px",
+          borderRadius: 7, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500,
+          background: !activeTopic ? "#111" : "transparent", color: !activeTopic ? "#fff" : "#6B7280",
+          marginBottom: 2,
+        }}>All Articles</button>
+        {topics.map(t => (
+          <button key={t.topic} onClick={() => setActiveTopic(t.topic)} style={{
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            width: "100%", textAlign: "left", padding: "7px 10px",
+            borderRadius: 7, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500,
+            background: activeTopic === t.topic ? "#111" : "transparent",
+            color: activeTopic === t.topic ? "#fff" : "#6B7280",
+            marginBottom: 2,
+          }}>
+            <span>{t.topic}</span>
+            <span style={{ fontSize: 11, opacity: 0.6 }}>{t.count}</span>
+          </button>
+        ))}
+      </div>
+
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 13, color: "#9CA3AF", marginBottom: 12 }}>
+          {filtered.length} articles {activeTopic ? `in ${activeTopic}` : ""}
+        </div>
+        {filtered.slice(0, 50).map(a => (
+          <ArticleRow key={a.id} article={a} onClick={onArticleClick} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SearchView({ onArticleClick }) {
+  const [q, setQ] = useState("");
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!q.trim()) { setResults([]); return; }
+    const t = setTimeout(() => {
+      setLoading(true);
+      api.search(q).then(r => { setResults(r); setLoading(false); });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  return (
+    <div style={{ maxWidth: 640, margin: "0 auto" }}>
+      <input
+        value={q} onChange={e => setQ(e.target.value)}
+        placeholder="Search articles by title..."
+        autoFocus
+        style={{
+          width: "100%", padding: "12px 18px", borderRadius: 10,
+          border: "1.5px solid #E5E7EB", fontSize: 15, outline: "none",
+          background: "#fff", color: "#111", marginBottom: 20,
+          boxSizing: "border-box",
+        }}
+      />
+      {loading && <div style={{ color: "#9CA3AF", fontSize: 14 }}>Searching...</div>}
+      {!loading && q && results.length === 0 && <div style={{ color: "#9CA3AF", fontSize: 14 }}>No results for "{q}"</div>}
+      {results.map(a => <ArticleRow key={a.id} article={a} onClick={onArticleClick} />)}
+    </div>
+  );
+}
+
+export default function App() {
+  const [view, setView] = useState("dashboard");
+  const [topics, setTopics] = useState([]);
+  const [articles, setArticles] = useState([]);
+  const [selectedArticle, setSelectedArticle] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchQ, setSearchQ] = useState("");
+
+  const loadData = useCallback(() => {
+    api.getTopics().then(t => setTopics(t.sort((a, b) => b.count - a.count)));
+    api.getArticles().then(setArticles);
+  }, []);
+
+  useEffect(() => { loadData(); }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try { await api.runNow(); } catch (e) {}
+    setTimeout(() => { loadData(); setRefreshing(false); }, 3000);
+  };
+
+  const handleTopicClick = (topic) => {
+    setView("feed");
+  };
+
+  return (
+    <div style={{ fontFamily: "'Inter', -apple-system, sans-serif", background: "#F9FAFB", minHeight: "100vh" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        * { box-sizing: border-box; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        ::-webkit-scrollbar { width: 6px; } 
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 3px; }
+      `}</style>
+
+      <TopBar
+        onSearch={setSearchQ}
+        onRefresh={handleRefresh}
+        refreshing={refreshing}
+        view={view}
+        setView={setView}
+      />
+
+      <main style={{ maxWidth: 960, margin: "0 auto", padding: "80px 24px 40px" }}>
+        {view === "dashboard" && (
+          <Dashboard topics={topics} articles={articles} onTopicClick={handleTopicClick} />
+        )}
+        {view === "feed" && (
+          <Feed topics={topics} articles={articles} onArticleClick={setSelectedArticle} />
+        )}
+        {view === "search" && (
+          <SearchView onArticleClick={setSelectedArticle} />
+        )}
+      </main>
+
+      <ArticleModal article={selectedArticle} onClose={() => setSelectedArticle(null)} />
+    </div>
+  );
+}
