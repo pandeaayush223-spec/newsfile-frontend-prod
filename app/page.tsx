@@ -338,8 +338,16 @@ export default function App() {
   const [searchQ, setSearchQ] = useState("");
 
   const loadData = useCallback(() => {
-    api.getTopics().then(t => setTopics(t.sort((a, b) => b.count - a.count)));
-    api.getArticles().then(setArticles);
+    api.getTopics().then(t => {
+      if (Array.isArray(t)) {
+        setTopics(t.sort((a, b) => b.count - a.count));
+      }
+    });
+    api.getArticles().then(articles => {
+      if (Array.isArray(articles)) {
+        setArticles(articles);
+      }
+    });
   }, []);
 
   useEffect(() => { loadData(); }, []);

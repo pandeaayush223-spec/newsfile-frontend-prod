@@ -7,7 +7,12 @@ export async function POST() {
     const data = await res.json();
     return Response.json(data);
   } catch (error) {
-    console.error('Scheduler API error:', error);
-    return Response.json({ error: 'Failed to run scheduler' }, { status: 500 });
+    return Response.json(
+      { 
+        error: 'Backend server is not running',
+        message: 'Please ensure your FastAPI server is running at http://localhost:8000',
+      }, 
+      { status: 503 }
+    );
   }
 }
