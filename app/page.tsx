@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from "react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 const API = "/api";
 
@@ -11,6 +12,7 @@ const api = {
   getStats: () => fetch(`${API}/stats`).then(r => r.json()),
   search: (q) => fetch(`${API}/search?q=${encodeURIComponent(q)}`).then(r => r.json()),
   runNow: () => fetch(`${API}/scheduler/run-now`, { method: "POST" }).then(r => r.json()),
+  getArticleStats: (id) => fetch(`${API}/articles/${id}/stats`, { method: "POST" }).then(r => r.json()),
 };
 
 const TOPIC_COLORS = {
@@ -148,11 +150,28 @@ function ArticleRow({ article, onClick }) {
 
 function ArticleModal({ article, onClose }) {
   const [full, setFull] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [showStats, setShowStats] = useState(false);
+  const [loadingStats, setLoadingStats] = useState(false);
+
   useEffect(() => {
     if (!article) return;
     api.getArticle(article.id).then(setFull);
     return () => setFull(null);
   }, [article?.id]);
+
+  const handleStatsClick = () => {
+    if (showStats) {
+      setShowStats(false);
+    } else {
+      setLoadingStats(true);
+      api.getArticleStats(article.id).then(data => {
+        setStats(data);
+        setShowStats(true);
+        setLoadingStats(false);
+      });
+    }
+  };
 
   if (!article) return null;
   const color = TOPIC_COLORS[article.topic] || "#8080ff";
@@ -179,24 +198,87 @@ function ArticleModal({ article, onClose }) {
               display: "flex", alignItems: "center", justifyContent: "center", color: "#a1a1a6",
             }}>×</button>
           </div>
-          <div style={{ display: "flex", gap: 10, marginTop: 10, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 10, marginTop: 10, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ fontSize: 12, color: "#a1a1a6" }}>{article.source}</span>
             <span style={{
               fontSize: 12, background: `${color}22`, color: color,
               padding: "2px 10px", borderRadius: 10, fontWeight: 600,
             }}>{article.topic}</span>
             <a href={article.url} target="_blank" rel="noreferrer" style={{
-              fontSize: 12, color: "#8080ff", textDecoration: "none", marginLeft: "auto",
+              fontSize: 12, color: "#8080ff", textDecoration: "none",
             }}>Read original →</a>
+            <button onClick={handleStatsClick} style={{
+              marginLeft: "auto", fontSize: 12, padding: "4px 12px", borderRadius: 6,
+              border: "1px solid rgba(255,255,255,0.2)", background: "rgba(128,128,255,0.15)",
+              color: "#8080ff", cursor: "pointer", fontWeight: 500,
+            }}>
+              {loadingStats ? "Loading..." : showStats ? "Hide Stats" : "View Stats"}
+            </button>
           </div>
         </div>
         <div style={{ padding: "20px 28px", overflowY: "auto", flex: 1 }}>
-          {full ? (
-            <p style={{ fontSize: 14, lineHeight: 1.8, color: "#d0d0d6", margin: 0, whiteSpace: "pre-wrap" }}>
-              {full.full_text || full.summary || "No content available."}
-            </p>
+          {showStats && stats ? (
+            <div>
+              <p style={{ fontSize: 14, color: "#d0d0d6", marginTop: 0, marginBottom: 16 }}>
+                {stats.summary}
+              </p>
+              
+              {stats.chart_data && stats.chart_data.length > 0 && (
+                <div style={{ marginBottom: 24 }}>
+                  <h3 style={{ fontSize: 13, fontWeight: 600, color: "#f5f5f7", marginBottom: 12 }}>Weekly Views</h3>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={stats.chart_data}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                      <XAxis dataKey="name" stroke="#a1a1a6" style={{ fontSize: 12 }} />
+                      <YAxis stroke="#a1a1a6" style={{ fontSize: 12 }} />
+                      <Tooltip 
+                        contentStyle={{ background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6 }}
+                        labelStyle={{ color: "#f5f5f7" }}
+                      />
+                      <Bar dataKey="value" fill="#8080ff" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              {stats.stats && stats.stats.length > 0 && (
+                <div style={{ marginBottom: 24 }}>
+                  <h3 style={{ fontSize: 13, fontWeight: 600, color: "#f5f5f7", marginBottom: 12 }}>Key Metrics</h3>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    {stats.stats.map((stat, i) => (
+                      <div key={i} style={{
+                        background: "rgba(255,255,255,0.04)", borderRadius: 8, padding: 12,
+                        border: "1px solid rgba(255,255,255,0.08)"
+                      }}>
+                        <div style={{ fontSize: 11, color: "#a1a1a6", marginBottom: 4 }}>{stat.label}</div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: "#8080ff" }}>{stat.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {stats.key_facts && stats.key_facts.length > 0 && (
+                <div>
+                  <h3 style={{ fontSize: 13, fontWeight: 600, color: "#f5f5f7", marginBottom: 12 }}>Key Facts</h3>
+                  <ul style={{ margin: 0, paddingLeft: 20, color: "#d0d0d6", fontSize: 13, lineHeight: 1.6 }}>
+                    {stats.key_facts.map((fact, i) => (
+                      <li key={i} style={{ marginBottom: 8 }}>{fact}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           ) : (
-            <div style={{ color: "#a1a1a6", fontSize: 14 }}>Loading...</div>
+            <>
+              {full ? (
+                <p style={{ fontSize: 14, lineHeight: 1.8, color: "#d0d0d6", margin: 0, whiteSpace: "pre-wrap" }}>
+                  {full.full_text || full.summary || "No content available."}
+                </p>
+              ) : (
+                <div style={{ color: "#a1a1a6", fontSize: 14 }}>Loading...</div>
+              )}
+            </>
           )}
         </div>
       </div>
