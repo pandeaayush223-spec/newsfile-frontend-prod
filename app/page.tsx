@@ -16,133 +16,148 @@ const api = {
 };
 
 const TOPIC_COLORS = {
-  Technology: "#3B82F6",
-  Economics: "#10B981",
-  Politics: "#F59E0B",
-  Health: "#EF4444",
-  Climate: "#06B6D4",
-  Other: "#8B5CF6",
+  Technology: "#78b888",
+  Finance: "#e0a860",
+  Politics: "#b898d0",
+  Health: "#c47e2a",
+  Science: "#78b888",
+  Business: "#e0a860",
 };
 
-function TopBar({ onSearch, onRefresh, refreshing, view, setView }) {
-  const [q, setQ] = useState("");
-  useEffect(() => {
-    const t = setTimeout(() => onSearch(q), 300);
-    return () => clearTimeout(t);
-  }, [q]);
-
-  return (
-    <header style={{
-      position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-      background: "rgba(18, 18, 24, 0.95)", backdropFilter: "blur(12px)",
-      borderBottom: "1px solid rgba(255,255,255,0.08)",
-      display: "flex", alignItems: "center", gap: 16,
-      padding: "0 32px", height: 56,
-    }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginRight: 24 }}>
-        <span style={{ fontFamily: "'Georgia', serif", fontSize: 20, fontWeight: 700, letterSpacing: "-0.5px", color: "#f5f5f7" }}>NEWS</span>
-        <span style={{ fontFamily: "'Georgia', serif", fontSize: 20, fontWeight: 400, color: "#a1a1a6" }}>FILE</span>
-      </div>
-
-      <nav style={{ display: "flex", gap: 4 }}>
-        {["dashboard", "feed", "search"].map(v => (
-          <button key={v} onClick={() => setView(v)} style={{
-            padding: "5px 14px", borderRadius: 6, border: "none", cursor: "pointer",
-            fontSize: 13, fontWeight: 500, textTransform: "capitalize",
-            background: view === v ? "rgba(255,255,255,0.12)" : "transparent",
-            color: view === v ? "#f5f5f7" : "#a1a1a6",
-            transition: "all 0.15s",
-          }}>{v}</button>
-        ))}
-      </nav>
-
-      <div style={{ flex: 1 }} />
-
-      {view === "search" && (
-        <input
-          value={q} onChange={e => setQ(e.target.value)}
-          placeholder="Search articles..."
-          style={{
-            width: 280, padding: "7px 14px", borderRadius: 8,
-            border: "1px solid rgba(255,255,255,0.1)", fontSize: 13, outline: "none",
-            background: "rgba(255,255,255,0.05)", color: "#f5f5f7",
-          }}
-        />
-      )}
-
-      <button onClick={onRefresh} disabled={refreshing} style={{
-        padding: "7px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)",
-        background: "rgba(255,255,255,0.05)", color: "#a1a1a6", fontSize: 13, fontWeight: 500,
-        cursor: refreshing ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6,
-        opacity: refreshing ? 0.6 : 1, transition: "all 0.15s",
-      }}>
-        <span style={{ display: "inline-block", animation: refreshing ? "spin 1s linear infinite" : "none" }}>↻</span>
-        {refreshing ? "Refreshing..." : "Refresh"}
-      </button>
-    </header>
-  );
-}
-
-function StatCard({ label, value, sub, color }) {
+function Sidebar({ topics, activeTopic, onTopicChange }) {
   return (
     <div style={{
-      background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "20px 24px",
-      border: "1px solid rgba(255,255,255,0.08)", flex: 1, minWidth: 140,
+      width: 200, background: "#2a1a0a", display: "flex", flexDirection: "column",
+      borderRight: "0.5px solid #3d2810", height: "100vh", position: "fixed", left: 0, top: 0,
     }}>
-      <div style={{ fontSize: 28, fontWeight: 700, color: color || "#8080ff", fontFamily: "'Georgia', serif" }}>{value}</div>
-      <div style={{ fontSize: 13, fontWeight: 600, color: "#f5f5f7", marginTop: 2 }}>{label}</div>
-      {sub && <div style={{ fontSize: 12, color: "#a1a1a6", marginTop: 2 }}>{sub}</div>}
+      <div style={{ padding: "16px 14px 12px", borderBottom: "0.5px solid #3d2810" }}>
+        <div style={{ fontSize: 13, fontWeight: 500, color: "#f5e8d0", letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: 8, fontFamily: "Georgia, serif" }}>
+          <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#c47e2a" }} />
+          NEWSFILE
+        </div>
+      </div>
+
+      <div style={{ padding: "8px 0", flex: 1, overflowY: "auto" }}>
+        <div style={{ padding: "12px 10px 6px", fontSize: 10, color: "#7a5030", letterSpacing: "0.06em", fontWeight: 500 }}>Topics</div>
+        <button onClick={() => onTopicChange(null)} style={{
+          display: "flex", alignItems: "center", gap: 8, padding: "7px 14px", fontSize: 12, color: activeTopic === null ? "#f0dfc0" : "#b89070",
+          border: "none", background: activeTopic === null ? "#3d2410" : "transparent", cursor: "pointer",
+          borderLeft: activeTopic === null ? "2px solid #c47e2a" : "2px solid transparent", width: "100%", textAlign: "left",
+        }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor", opacity: activeTopic === null ? 1 : 0.5 }} />
+          All news
+        </button>
+        {topics.map(t => (
+          <button key={t.topic} onClick={() => onTopicChange(t.topic)} style={{
+            display: "flex", alignItems: "center", gap: 8, padding: "7px 14px", fontSize: 12, color: activeTopic === t.topic ? "#f0dfc0" : "#b89070",
+            border: "none", background: activeTopic === t.topic ? "#3d2410" : "transparent", cursor: "pointer",
+            borderLeft: activeTopic === t.topic ? "2px solid #c47e2a" : "2px solid transparent", width: "100%", textAlign: "left",
+          }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor", opacity: activeTopic === t.topic ? 1 : 0.5 }} />
+            {t.topic}
+            <span style={{ marginLeft: "auto", fontSize: 10, background: "#3a2010", color: "#9a7050", padding: "1px 6px", borderRadius: 10 }}>{t.count}</span>
+          </button>
+        ))}
+        <div style={{ padding: "12px 10px 6px", fontSize: 10, color: "#7a5030", letterSpacing: "0.06em", fontWeight: 500 }}>Tools</div>
+        <button style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 14px", fontSize: 12, color: "#b89070", border: "none", background: "transparent", cursor: "pointer", width: "100%", textAlign: "left" }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor", opacity: 0.5 }} />
+          Stats
+        </button>
+      </div>
+
+      <div style={{ padding: "12px 14px", borderTop: "0.5px solid #3d2810", fontSize: 11, color: "#7a5030", display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#6ab87a" }} />
+        Live · just now
+      </div>
     </div>
   );
 }
 
-function TopicBar({ topic, count, total, onClick }) {
-  const pct = total ? Math.round((count / total) * 100) : 0;
-  const color = TOPIC_COLORS[topic] || "#8080ff";
+function TopBar({ topics, articles, activeTopic, onSearch, onRefresh, refreshing }) {
+  const [searchQ, setSearchQ] = useState("");
+  const total = topics.reduce((s, t) => s + t.count, 0);
+  const topicName = activeTopic ? topics.find(t => t.topic === activeTopic)?.topic : "All news";
+  const count = activeTopic ? articles.filter(a => a.topic === activeTopic).length : articles.length;
+
+  useEffect(() => {
+    const t = setTimeout(() => onSearch(searchQ), 300);
+    return () => clearTimeout(t);
+  }, [searchQ]);
+
   return (
-    <div onClick={onClick} style={{ cursor: "pointer", marginBottom: 10 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: "#f5f5f7" }}>{topic}</span>
-        <span style={{ fontSize: 12, color: "#a1a1a6" }}>{count} articles</span>
+    <div style={{
+      position: "fixed", top: 0, left: 200, right: 0, zIndex: 100,
+      background: "#e8dcc0", borderBottom: "0.5px solid #c9b08a", display: "flex", flexDirection: "column",
+    }}>
+      <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontSize: 13, fontWeight: 500, color: "#2a1a0a", fontFamily: "Georgia, serif" }}>{topicName}</span>
+        <span style={{ fontSize: 11, color: "#9a7850" }}>{count} articles</span>
+        <input
+          value={searchQ} onChange={e => setSearchQ(e.target.value)}
+          placeholder="Search articles..."
+          style={{
+            marginLeft: "auto", background: "#ddd0b0", border: "0.5px solid #c9b08a", borderRadius: 6,
+            padding: "5px 10px", fontSize: 11, color: "#7a5a38", outline: "none", minWidth: 140,
+          }}
+        />
+        <button onClick={onRefresh} disabled={refreshing} style={{
+          background: "#2a1a0a", border: "0.5px solid #3d2810", borderRadius: 6, padding: "5px 10px",
+          fontSize: 11, color: "#e8c890", cursor: refreshing ? "not-allowed" : "pointer", whiteSpace: "nowrap",
+          opacity: refreshing ? 0.6 : 1,
+        }}>
+          {refreshing ? "Refreshing..." : "Refresh feeds"}
+        </button>
       </div>
-      <div style={{ height: 6, background: "rgba(255,255,255,0.1)", borderRadius: 4, overflow: "hidden" }}>
-        <div style={{
-          height: "100%", width: `${pct}%`, background: color,
-          borderRadius: 4, transition: "width 0.6s cubic-bezier(0.4,0,0.2,1)",
-        }} />
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 8, padding: "12px 14px", borderTop: "0.5px solid #c9b08a" }}>
+        <div style={{ background: "#e0d0b0", borderRadius: 6, padding: "8px 10px", border: "0.5px solid #c9b08a" }}>
+          <div style={{ fontSize: 16, fontWeight: 500, color: "#a05f18" }}>{total}</div>
+          <div style={{ fontSize: 10, color: "#9a7850", marginTop: 1 }}>Total articles</div>
+        </div>
+        <div style={{ background: "#e0d0b0", borderRadius: 6, padding: "8px 10px", border: "0.5px solid #c9b08a" }}>
+          <div style={{ fontSize: 16, fontWeight: 500, color: "#2a1a0a" }}>{Object.keys(new Set(articles.map(a => a.source))).length}</div>
+          <div style={{ fontSize: 10, color: "#9a7850", marginTop: 1 }}>Sources</div>
+        </div>
+        <div style={{ background: "#e0d0b0", borderRadius: 6, padding: "8px 10px", border: "0.5px solid #c9b08a" }}>
+          <div style={{ fontSize: 16, fontWeight: 500, color: "#3a7a48" }}>18</div>
+          <div style={{ fontSize: 10, color: "#9a7850", marginTop: 1 }}>Today</div>
+        </div>
+        <div style={{ background: "#e0d0b0", borderRadius: 6, padding: "8px 10px", border: "0.5px solid #c9b08a" }}>
+          <div style={{ fontSize: 16, fontWeight: 500, color: "#2a1a0a" }}>5m</div>
+          <div style={{ fontSize: 10, color: "#9a7850", marginTop: 1 }}>Last refresh</div>
+        </div>
       </div>
     </div>
   );
 }
 
-function ArticleRow({ article, onClick }) {
-  const color = TOPIC_COLORS[article.topic] || "#8080ff";
+function ArticleCard({ article, onClick, featured }) {
+  const tagColor = TOPIC_COLORS[article.topic] || "#c47e2a";
+  const tagBg = article.topic === "Technology" ? "#1a2e20" : article.topic === "Finance" ? "#3d2410" : "#2a1830";
+  const tagFg = article.topic === "Technology" ? "#78b888" : article.topic === "Finance" ? "#e0a860" : "#b898d0";
+
   return (
     <div onClick={() => onClick(article)} style={{
-      padding: "16px 0", borderBottom: "1px solid rgba(255,255,255,0.06)", cursor: "pointer",
-      display: "flex", gap: 14, alignItems: "flex-start",
-      transition: "background 0.1s",
+      background: "#ede0c4", borderRadius: 8, padding: "11px 13px", border: featured ? "2px solid #c47e2a" : "0.5px solid #c9b08a",
+      borderLeft: featured ? "2px solid #c47e2a" : "0.5px solid #c9b08a",
+      borderRadius: featured ? "0 8px 8px 0" : 8,
+      display: "flex", flexDirection: "column", gap: 5, cursor: "pointer", transition: "background 0.1s",
     }}
-      onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.03)"}
-      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+      onMouseEnter={e => e.currentTarget.style.background = "#e8dcc4"}
+      onMouseLeave={e => e.currentTarget.style.background = "#ede0c4"}
     >
-      <div style={{
-        width: 4, height: 44, borderRadius: 2, background: color,
-        flexShrink: 0, marginTop: 2,
-      }} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: "#f5f5f7", lineHeight: 1.4, marginBottom: 4 }}>
-          {article.title}
-        </div>
-        <div style={{ fontSize: 12, color: "#a1a1a6", display: "flex", gap: 10 }}>
-          <span>{article.source}</span>
-          <span>·</span>
-          <span style={{
-            background: `${color}22`, color: color,
-            padding: "1px 8px", borderRadius: 10, fontWeight: 500,
-          }}>{article.topic}</span>
-          {article.word_count && <><span>·</span><span>{article.word_count} words</span></>}
-        </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, fontWeight: 500, background: tagBg, color: tagFg }}>
+          {article.topic}
+        </span>
+        <span style={{ fontSize: 10, color: "#9a7850" }}>{article.source}</span>
+        <span style={{ fontSize: 10, color: "#b09870", marginLeft: "auto" }}>2h ago</span>
+      </div>
+      <div style={{ fontSize: 12, fontWeight: 500, color: "#1e1008", lineHeight: 1.4, fontFamily: "Georgia, serif" }}>
+        {article.title}
+      </div>
+      <div style={{ fontSize: 11, color: "#7a5a38", lineHeight: 1.4 }}>
+        {article.summary || article.title.substring(0, 80) + "..."}
       </div>
     </div>
   );
@@ -174,43 +189,42 @@ function ArticleModal({ article, onClose }) {
   };
 
   if (!article) return null;
-  const color = TOPIC_COLORS[article.topic] || "#8080ff";
 
   return (
     <div onClick={onClose} style={{
-      position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)",
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)",
       zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center",
       padding: 24,
     }}>
       <div onClick={e => e.stopPropagation()} style={{
-        background: "rgba(18,18,24,0.95)", borderRadius: 16, width: "100%", maxWidth: 680,
+        background: "#f0e6d0", borderRadius: 12, width: "100%", maxWidth: 680,
         maxHeight: "85vh", overflow: "hidden", display: "flex", flexDirection: "column",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.08)",
+        boxShadow: "0 20px 60px rgba(0,0,0,0.15)", border: "0.5px solid #c9b08a",
       }}>
-        <div style={{ padding: "24px 28px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <div style={{ padding: "24px 28px 16px", borderBottom: "0.5px solid #c9b08a" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
-            <h2 style={{ fontFamily: "'Georgia', serif", fontSize: 20, fontWeight: 700, color: "#f5f5f7", lineHeight: 1.4, margin: 0 }}>
+            <h2 style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 700, color: "#1e1008", lineHeight: 1.4, margin: 0 }}>
               {article.title}
             </h2>
             <button onClick={onClose} style={{
-              border: "none", background: "rgba(255,255,255,0.1)", borderRadius: 6,
+              border: "none", background: "#ddd0b0", borderRadius: 6,
               width: 28, height: 28, cursor: "pointer", fontSize: 16, flexShrink: 0,
-              display: "flex", alignItems: "center", justifyContent: "center", color: "#a1a1a6",
+              display: "flex", alignItems: "center", justifyContent: "center", color: "#6a4a28",
             }}>×</button>
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <span style={{ fontSize: 12, color: "#a1a1a6" }}>{article.source}</span>
+            <span style={{ fontSize: 12, color: "#9a7850" }}>{article.source}</span>
             <span style={{
-              fontSize: 12, background: `${color}22`, color: color,
+              fontSize: 12, background: "#e0d0b0", color: "#a05f18",
               padding: "2px 10px", borderRadius: 10, fontWeight: 600,
             }}>{article.topic}</span>
             <a href={article.url} target="_blank" rel="noreferrer" style={{
-              fontSize: 12, color: "#8080ff", textDecoration: "none",
+              fontSize: 12, color: "#c47e2a", textDecoration: "none", fontWeight: 500,
             }}>Read original →</a>
             <button onClick={handleStatsClick} style={{
               marginLeft: "auto", fontSize: 12, padding: "4px 12px", borderRadius: 6,
-              border: "1px solid rgba(255,255,255,0.2)", background: "rgba(128,128,255,0.15)",
-              color: "#8080ff", cursor: "pointer", fontWeight: 500,
+              border: "0.5px solid #c9b08a", background: "#e8dcc0",
+              color: "#a05f18", cursor: "pointer", fontWeight: 500,
             }}>
               {loadingStats ? "Loading..." : showStats ? "Hide Stats" : "View Stats"}
             </button>
@@ -219,23 +233,23 @@ function ArticleModal({ article, onClose }) {
         <div style={{ padding: "20px 28px", overflowY: "auto", flex: 1 }}>
           {showStats && stats ? (
             <div>
-              <p style={{ fontSize: 14, color: "#d0d0d6", marginTop: 0, marginBottom: 16 }}>
+              <p style={{ fontSize: 14, color: "#7a5a38", marginTop: 0, marginBottom: 16 }}>
                 {stats.summary}
               </p>
               
               {stats.chart_data && stats.chart_data.length > 0 && (
                 <div style={{ marginBottom: 24 }}>
-                  <h3 style={{ fontSize: 13, fontWeight: 600, color: "#f5f5f7", marginBottom: 12 }}>Weekly Views</h3>
+                  <h3 style={{ fontSize: 13, fontWeight: 600, color: "#1e1008", marginBottom: 12 }}>Weekly Views</h3>
                   <ResponsiveContainer width="100%" height={250}>
                     <BarChart data={stats.chart_data}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                      <XAxis dataKey="name" stroke="#a1a1a6" style={{ fontSize: 12 }} />
-                      <YAxis stroke="#a1a1a6" style={{ fontSize: 12 }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#c9b08a" />
+                      <XAxis dataKey="name" stroke="#9a7850" style={{ fontSize: 12 }} />
+                      <YAxis stroke="#9a7850" style={{ fontSize: 12 }} />
                       <Tooltip 
-                        contentStyle={{ background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6 }}
-                        labelStyle={{ color: "#f5f5f7" }}
+                        contentStyle={{ background: "#ede0c4", border: "0.5px solid #c9b08a", borderRadius: 6 }}
+                        labelStyle={{ color: "#1e1008" }}
                       />
-                      <Bar dataKey="value" fill="#8080ff" radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="value" fill="#c47e2a" radius={[8, 8, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -243,15 +257,15 @@ function ArticleModal({ article, onClose }) {
 
               {stats.stats && stats.stats.length > 0 && (
                 <div style={{ marginBottom: 24 }}>
-                  <h3 style={{ fontSize: 13, fontWeight: 600, color: "#f5f5f7", marginBottom: 12 }}>Key Metrics</h3>
+                  <h3 style={{ fontSize: 13, fontWeight: 600, color: "#1e1008", marginBottom: 12 }}>Key Metrics</h3>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                     {stats.stats.map((stat, i) => (
                       <div key={i} style={{
-                        background: "rgba(255,255,255,0.04)", borderRadius: 8, padding: 12,
-                        border: "1px solid rgba(255,255,255,0.08)"
+                        background: "#e0d0b0", borderRadius: 8, padding: 12,
+                        border: "0.5px solid #c9b08a"
                       }}>
-                        <div style={{ fontSize: 11, color: "#a1a1a6", marginBottom: 4 }}>{stat.label}</div>
-                        <div style={{ fontSize: 18, fontWeight: 700, color: "#8080ff" }}>{stat.value}</div>
+                        <div style={{ fontSize: 11, color: "#9a7850", marginBottom: 4 }}>{stat.label}</div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: "#c47e2a" }}>{stat.value}</div>
                       </div>
                     ))}
                   </div>
@@ -260,8 +274,8 @@ function ArticleModal({ article, onClose }) {
 
               {stats.key_facts && stats.key_facts.length > 0 && (
                 <div>
-                  <h3 style={{ fontSize: 13, fontWeight: 600, color: "#f5f5f7", marginBottom: 12 }}>Key Facts</h3>
-                  <ul style={{ margin: 0, paddingLeft: 20, color: "#d0d0d6", fontSize: 13, lineHeight: 1.6 }}>
+                  <h3 style={{ fontSize: 13, fontWeight: 600, color: "#1e1008", marginBottom: 12 }}>Key Facts</h3>
+                  <ul style={{ margin: 0, paddingLeft: 20, color: "#7a5a38", fontSize: 13, lineHeight: 1.6 }}>
                     {stats.key_facts.map((fact, i) => (
                       <li key={i} style={{ marginBottom: 8 }}>{fact}</li>
                     ))}
@@ -272,11 +286,11 @@ function ArticleModal({ article, onClose }) {
           ) : (
             <>
               {full ? (
-                <p style={{ fontSize: 14, lineHeight: 1.8, color: "#d0d0d6", margin: 0, whiteSpace: "pre-wrap" }}>
+                <p style={{ fontSize: 14, lineHeight: 1.8, color: "#7a5a38", margin: 0, whiteSpace: "pre-wrap" }}>
                   {full.full_text || full.summary || "No content available."}
                 </p>
               ) : (
-                <div style={{ color: "#a1a1a6", fontSize: 14 }}>Loading...</div>
+                <div style={{ color: "#9a7850", fontSize: 14 }}>Loading...</div>
               )}
             </>
           )}
@@ -286,137 +300,12 @@ function ArticleModal({ article, onClose }) {
   );
 }
 
-function Dashboard({ topics, articles, onTopicClick }) {
-  const total = topics.reduce((s, t) => s + t.count, 0);
-  const sources = {};
-  articles.forEach(a => { sources[a.source] = (sources[a.source] || 0) + 1; });
-  const topSources = Object.entries(sources).sort((a, b) => b[1] - a[1]).slice(0, 5);
-
-  return (
-    <div>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontFamily: "'Georgia', serif", fontSize: 28, fontWeight: 700, color: "#f5f5f7", margin: "0 0 4px" }}>
-          Good morning.
-        </h1>
-        <p style={{ fontSize: 14, color: "#a1a1a6", margin: 0 }}>
-          {total} articles tracked across {topics.length} topics
-        </p>
-      </div>
-
-      <div style={{ display: "flex", gap: 12, marginBottom: 28, flexWrap: "wrap" }}>
-        <StatCard label="Total Articles" value={total} color="#8080ff" />
-        <StatCard label="Topics" value={topics.length} color="#6B9EFF" />
-        <StatCard label="Top Topic" value={topics[0]?.topic || "—"} sub={`${topics[0]?.count || 0} articles`} color={TOPIC_COLORS[topics[0]?.topic]} />
-        <StatCard label="Sources" value={Object.keys(sources).length} color="#5FD29E" />
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "20px 24px", border: "1px solid rgba(255,255,255,0.08)" }}>
-          <h3 style={{ fontSize: 13, fontWeight: 700, color: "#f5f5f7", margin: "0 0 16px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            Articles by Topic
-          </h3>
-          {topics.map(t => (
-            <TopicBar key={t.topic} topic={t.topic} count={t.count} total={total} onClick={() => onTopicClick(t.topic)} />
-          ))}
-        </div>
-
-        <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "20px 24px", border: "1px solid rgba(255,255,255,0.08)" }}>
-          <h3 style={{ fontSize: 13, fontWeight: 700, color: "#f5f5f7", margin: "0 0 16px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            Top Sources
-          </h3>
-          {topSources.map(([source, count]) => (
-            <div key={source} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-              <span style={{ fontSize: 14, color: "#f5f5f7", fontWeight: 500 }}>{source}</span>
-              <span style={{ fontSize: 13, color: "#a1a1a6", background: "rgba(255,255,255,0.08)", padding: "2px 10px", borderRadius: 10 }}>{count}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Feed({ topics, articles, onArticleClick }) {
-  const [activeTopic, setActiveTopic] = useState(null);
-  const filtered = activeTopic ? articles.filter(a => a.topic === activeTopic) : articles;
-
-  return (
-    <div style={{ display: "flex", gap: 24 }}>
-      <div style={{ width: 200, flexShrink: 0 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#a1a1a6", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Topics</div>
-        <button onClick={() => setActiveTopic(null)} style={{
-          display: "block", width: "100%", textAlign: "left", padding: "7px 10px",
-          borderRadius: 7, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500,
-          background: !activeTopic ? "rgba(255,255,255,0.12)" : "transparent", color: !activeTopic ? "#f5f5f7" : "#a1a1a6",
-          marginBottom: 2,
-        }}>All Articles</button>
-        {topics.map(t => (
-          <button key={t.topic} onClick={() => setActiveTopic(t.topic)} style={{
-            display: "flex", justifyContent: "space-between", alignItems: "center",
-            width: "100%", textAlign: "left", padding: "7px 10px",
-            borderRadius: 7, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500,
-            background: activeTopic === t.topic ? "rgba(255,255,255,0.12)" : "transparent",
-            color: activeTopic === t.topic ? "#f5f5f7" : "#a1a1a6",
-            marginBottom: 2,
-          }}>
-            <span>{t.topic}</span>
-            <span style={{ fontSize: 11, opacity: 0.6 }}>{t.count}</span>
-          </button>
-        ))}
-      </div>
-
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, color: "#a1a1a6", marginBottom: 12 }}>
-          {filtered.length} articles {activeTopic ? `in ${activeTopic}` : ""}
-        </div>
-        {filtered.slice(0, 50).map(a => (
-          <ArticleRow key={a.id} article={a} onClick={onArticleClick} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SearchView({ onArticleClick }) {
-  const [q, setQ] = useState("");
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!q.trim()) { setResults([]); return; }
-    const t = setTimeout(() => {
-      setLoading(true);
-      api.search(q).then(r => { setResults(r); setLoading(false); });
-    }, 300);
-    return () => clearTimeout(t);
-  }, [q]);
-
-  return (
-    <div style={{ maxWidth: 640, margin: "0 auto" }}>
-      <input
-        value={q} onChange={e => setQ(e.target.value)}
-        placeholder="Search articles by title..."
-        autoFocus
-        style={{
-          width: "100%", padding: "12px 18px", borderRadius: 10,
-          border: "1px solid rgba(255,255,255,0.1)", fontSize: 15, outline: "none",
-          background: "rgba(255,255,255,0.05)", color: "#f5f5f7", marginBottom: 20,
-          boxSizing: "border-box",
-        }}
-      />
-      {loading && <div style={{ color: "#a1a1a6", fontSize: 14 }}>Searching...</div>}
-      {!loading && q && results.length === 0 && <div style={{ color: "#a1a1a6", fontSize: 14 }}>No results for "{q}"</div>}
-      {results.map(a => <ArticleRow key={a.id} article={a} onClick={onArticleClick} />)}
-    </div>
-  );
-}
-
 export default function App() {
-  const [view, setView] = useState("dashboard");
   const [topics, setTopics] = useState([]);
   const [articles, setArticles] = useState([]);
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTopic, setActiveTopic] = useState(null);
   const [searchQ, setSearchQ] = useState("");
 
   const loadData = useCallback(() => {
@@ -440,40 +329,34 @@ export default function App() {
     setTimeout(() => { loadData(); setRefreshing(false); }, 3000);
   };
 
-  const handleTopicClick = (topic) => {
-    setView("feed");
-  };
+  const filtered = activeTopic ? articles.filter(a => a.topic === activeTopic) : articles;
+  const searched = searchQ ? filtered.filter(a => a.title.toLowerCase().includes(searchQ.toLowerCase())) : filtered;
 
   return (
-    <div style={{ fontFamily: "'Inter', -apple-system, sans-serif", background: "#121218", minHeight: "100vh" }}>
+    <div style={{ fontFamily: "'Inter', -apple-system, sans-serif", background: "#f0e6d0", minHeight: "100vh", display: "flex" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         * { box-sizing: border-box; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         ::-webkit-scrollbar { width: 6px; } 
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: #c9b08a; border-radius: 3px; }
       `}</style>
 
-      <TopBar
-        onSearch={setSearchQ}
-        onRefresh={handleRefresh}
-        refreshing={refreshing}
-        view={view}
-        setView={setView}
-      />
+      <Sidebar topics={topics} activeTopic={activeTopic} onTopicChange={setActiveTopic} />
 
-      <main style={{ maxWidth: 960, margin: "0 auto", padding: "80px 24px 40px" }}>
-        {view === "dashboard" && (
-          <Dashboard topics={topics} articles={articles} onTopicClick={handleTopicClick} />
-        )}
-        {view === "feed" && (
-          <Feed topics={topics} articles={articles} onArticleClick={setSelectedArticle} />
-        )}
-        {view === "search" && (
-          <SearchView onArticleClick={setSelectedArticle} />
-        )}
-      </main>
+      <div style={{ marginLeft: 200, display: "flex", flexDirection: "column", flex: 1 }}>
+        <TopBar topics={topics} articles={articles} activeTopic={activeTopic} onSearch={setSearchQ} onRefresh={handleRefresh} refreshing={refreshing} />
+
+        <div style={{
+          marginTop: 180, paddingBottom: 40, paddingLeft: 14, paddingRight: 14, flex: 1, overflowY: "auto",
+          display: "flex", flexDirection: "column", gap: 8,
+        }}>
+          {searched.slice(0, 50).map((a, i) => (
+            <ArticleCard key={a.id} article={a} onClick={setSelectedArticle} featured={i === 0} />
+          ))}
+        </div>
+      </div>
 
       <ArticleModal article={selectedArticle} onClose={() => setSelectedArticle(null)} />
     </div>
