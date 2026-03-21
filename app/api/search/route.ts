@@ -18,7 +18,7 @@ export async function GET(request: Request) {
       return Response.json({ error: 'Search query required' }, { status: 400 });
     }
     
-    const res = await fetch(`http://localhost:8000/search?q=${encodeURIComponent(q)}`);
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "https://newsfile-backend.fly.dev"}/search?q=${encodeURIComponent(q)}`);
     if (!res.ok) throw new Error('Failed to search');
     const data = await res.json();
     return Response.json(data);

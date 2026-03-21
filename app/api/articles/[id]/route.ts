@@ -25,7 +25,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const res = await fetch(`http://localhost:8000/articles/${id}`);
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "https://newsfile-backend.fly.dev"}/articles/${id}`);
     if (!res.ok) throw new Error('Failed to fetch article');
     const data = await res.json();
     return Response.json(data);
@@ -39,7 +39,7 @@ export async function GET(
       topic: 'General',
       url: '#',
       word_count: 0,
-      full_text: 'This is a sample article. Please ensure your FastAPI backend is running at http://localhost:8000 to see real content.',
+      full_text: 'This is a sample article. Please ensure your FastAPI backend is running at ${process.env.NEXT_PUBLIC_API_URL ?? "https://newsfile-backend.fly.dev"} to see real content.',
     };
     return Response.json(mockArticle);
   }

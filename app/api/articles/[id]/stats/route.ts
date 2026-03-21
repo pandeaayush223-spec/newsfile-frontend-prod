@@ -57,7 +57,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const res = await fetch(`http://localhost:8000/articles/${id}/stats`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "https://newsfile-backend.fly.dev"}/articles/${id}/stats`, {
       method: 'POST',
     });
     if (!res.ok) throw new Error('Failed to fetch stats');
@@ -73,7 +73,7 @@ export async function POST(
         { label: 'Shares', value: 0 },
       ],
       chart_data: [],
-      key_facts: ['Please ensure your FastAPI backend is running at http://localhost:8000'],
+      key_facts: ['Please ensure your FastAPI backend is running at ${process.env.NEXT_PUBLIC_API_URL ?? "https://newsfile-backend.fly.dev"}'],
     };
     return Response.json(mockData);
   }

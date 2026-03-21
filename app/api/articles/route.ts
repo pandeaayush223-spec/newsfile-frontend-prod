@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const topic = searchParams.get('topic');
     
-    const url = new URL('http://localhost:8000/articles');
+    const url = new URL('${process.env.NEXT_PUBLIC_API_URL ?? "https://newsfile-backend.fly.dev"}/articles');
     if (topic) url.searchParams.append('topic', topic);
     
     const res = await fetch(url.toString());

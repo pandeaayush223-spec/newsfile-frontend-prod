@@ -1,6 +1,6 @@
 export async function POST() {
   try {
-    const res = await fetch('http://localhost:8000/scheduler/run-now', {
+    const res = await fetch('${process.env.NEXT_PUBLIC_API_URL ?? "https://newsfile-backend.fly.dev"}/scheduler/run-now', {
       method: 'POST',
     });
     if (!res.ok) throw new Error('Failed to run scheduler');
@@ -10,7 +10,7 @@ export async function POST() {
     return Response.json(
       { 
         error: 'Backend server is not running',
-        message: 'Please ensure your FastAPI server is running at http://localhost:8000',
+        message: 'Please ensure your FastAPI server is running at ${process.env.NEXT_PUBLIC_API_URL ?? "https://newsfile-backend.fly.dev"}',
       }, 
       { status: 503 }
     );
