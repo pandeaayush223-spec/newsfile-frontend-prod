@@ -7,7 +7,7 @@ const mockStats = {
 
 export async function GET() {
   try {
-    const res = await fetch('${process.env.NEXT_PUBLIC_API_URL ?? "https://newsfile-backend.fly.dev"}/stats');
+    const res = await fetch('https://newsfile-backend.fly.dev/stats');
     if (!res.ok) throw new Error('Failed to fetch stats');
     const data = await res.json();
     return Response.json(data);

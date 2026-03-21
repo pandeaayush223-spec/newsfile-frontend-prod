@@ -8,7 +8,7 @@ const mockTopics = [
 
 export async function GET() {
   try {
-    const res = await fetch('${process.env.NEXT_PUBLIC_API_URL ?? "https://newsfile-backend.fly.dev"}/topics');
+    const res = await fetch('https://newsfile-backend.fly.dev/topics');
     if (!res.ok) throw new Error('Failed to fetch topics');
     const data = await res.json();
     return Response.json(data);
