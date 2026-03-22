@@ -24,6 +24,13 @@ const TOPIC_COLORS = {
   Business: "#e0a860",
 };
 
+function formatDate(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
 function Sidebar({ topics, activeTopic, onTopicChange }) {
   return (
     <div style={{
@@ -79,6 +86,9 @@ function TopBar({ topics, articles, activeTopic, onSearch, onRefresh, refreshing
   const topicName = activeTopic ? topics.find(t => t.topic === activeTopic)?.topic : "All news";
   const count = activeTopic ? articles.filter(a => a.topic === activeTopic).length : articles.length;
 
+  // FIX 2: Use Set.size instead of Object.keys(new Set())
+  const sourcesCount = new Set(articles.map(a => a.source)).size;
+
   useEffect(() => {
     const t = setTimeout(() => onSearch(searchQ), 300);
     return () => clearTimeout(t);
@@ -115,7 +125,8 @@ function TopBar({ topics, articles, activeTopic, onSearch, onRefresh, refreshing
           <div style={{ fontSize: 10, color: "#9a7850", marginTop: 1 }}>Total articles</div>
         </div>
         <div style={{ background: "#e0d0b0", borderRadius: 6, padding: "8px 10px", border: "0.5px solid #c9b08a" }}>
-          <div style={{ fontSize: 16, fontWeight: 500, color: "#2a1a0a" }}>{Object.keys(new Set(articles.map(a => a.source))).length}</div>
+          {/* FIX 2: Correct sources count */}
+          <div style={{ fontSize: 16, fontWeight: 500, color: "#2a1a0a" }}>{sourcesCount}</div>
           <div style={{ fontSize: 10, color: "#9a7850", marginTop: 1 }}>Sources</div>
         </div>
         <div style={{ background: "#e0d0b0", borderRadius: 6, padding: "8px 10px", border: "0.5px solid #c9b08a" }}>
@@ -132,15 +143,23 @@ function TopBar({ topics, articles, activeTopic, onSearch, onRefresh, refreshing
 }
 
 function ArticleCard({ article, onClick, featured }) {
-  const tagColor = TOPIC_COLORS[article.topic] || "#c47e2a";
   const tagBg = article.topic === "Technology" ? "#1a2e20" : article.topic === "Finance" ? "#3d2410" : "#2a1830";
   const tagFg = article.topic === "Technology" ? "#78b888" : article.topic === "Finance" ? "#e0a860" : "#b898d0";
 
+  // FIX 3: Don't repeat title as summary
+  const summaryText = article.summary && article.summary !== article.title
+    ? article.summary
+    : "No summary available.";
+
+  // FIX 5: Show real publication date
+  const dateStr = formatDate(article.published_date);
+
   return (
     <div onClick={() => onClick(article)} style={{
-      background: "#ede0c4", borderRadius: 8, padding: "11px 13px", border: featured ? "2px solid #c47e2a" : "0.5px solid #c9b08a",
+      background: "#ede0c4", borderRadius: featured ? "0 8px 8px 0" : 8,
+      padding: "11px 13px",
+      border: featured ? "2px solid #c47e2a" : "0.5px solid #c9b08a",
       borderLeft: featured ? "2px solid #c47e2a" : "0.5px solid #c9b08a",
-      borderRadius: featured ? "0 8px 8px 0" : 8,
       display: "flex", flexDirection: "column", gap: 5, cursor: "pointer", transition: "background 0.1s",
     }}
       onMouseEnter={e => e.currentTarget.style.background = "#e8dcc4"}
@@ -151,13 +170,14 @@ function ArticleCard({ article, onClick, featured }) {
           {article.topic}
         </span>
         <span style={{ fontSize: 10, color: "#9a7850" }}>{article.source}</span>
-        <span style={{ fontSize: 10, color: "#b09870", marginLeft: "auto" }}>2h ago</span>
+        {/* FIX 5: Real date instead of hardcoded "2h ago" */}
+        <span style={{ fontSize: 10, color: "#b09870", marginLeft: "auto" }}>{dateStr}</span>
       </div>
       <div style={{ fontSize: 12, fontWeight: 500, color: "#1e1008", lineHeight: 1.4, fontFamily: "Georgia, serif" }}>
         {article.title}
       </div>
       <div style={{ fontSize: 11, color: "#7a5a38", lineHeight: 1.4 }}>
-        {article.summary || article.title.substring(0, 80) + "..."}
+        {summaryText}
       </div>
     </div>
   );
@@ -172,7 +192,12 @@ function ArticleModal({ article, onClose }) {
   useEffect(() => {
     if (!article) return;
     api.getArticle(article.id).then(setFull);
-    return () => setFull(null);
+    // FIX 1: Reset ALL state when switching articles
+    return () => {
+      setFull(null);
+      setStats(null);
+      setShowStats(false);
+    };
   }, [article?.id]);
 
   const handleStatsClick = () => {
@@ -189,6 +214,9 @@ function ArticleModal({ article, onClose }) {
   };
 
   if (!article) return null;
+
+  // FIX 4: Only show chart if there are 2+ data points
+  const chartData = stats?.chart_data?.length >= 2 ? stats.chart_data : [];
 
   return (
     <div onClick={onClose} style={{
@@ -214,6 +242,8 @@ function ArticleModal({ article, onClose }) {
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: 10, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ fontSize: 12, color: "#9a7850" }}>{article.source}</span>
+            {/* FIX 5: Show full date in modal too */}
+            <span style={{ fontSize: 12, color: "#9a7850" }}>{formatDate(article.published_date)}</span>
             <span style={{
               fontSize: 12, background: "#e0d0b0", color: "#a05f18",
               padding: "2px 10px", borderRadius: 10, fontWeight: 600,
@@ -236,16 +266,17 @@ function ArticleModal({ article, onClose }) {
               <p style={{ fontSize: 14, color: "#7a5a38", marginTop: 0, marginBottom: 16 }}>
                 {stats.summary}
               </p>
-              
-              {stats.chart_data && stats.chart_data.length > 0 && (
+
+              {/* FIX 4: Only show chart if 2+ data points, with correct label */}
+              {chartData.length >= 2 && (
                 <div style={{ marginBottom: 24 }}>
-                  <h3 style={{ fontSize: 13, fontWeight: 600, color: "#1e1008", marginBottom: 12 }}>Weekly Views</h3>
+                  <h3 style={{ fontSize: 13, fontWeight: 600, color: "#1e1008", marginBottom: 12 }}>Key Statistics</h3>
                   <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={stats.chart_data}>
+                    <BarChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#c9b08a" />
                       <XAxis dataKey="name" stroke="#9a7850" style={{ fontSize: 12 }} />
                       <YAxis stroke="#9a7850" style={{ fontSize: 12 }} />
-                      <Tooltip 
+                      <Tooltip
                         contentStyle={{ background: "#ede0c4", border: "0.5px solid #c9b08a", borderRadius: 6 }}
                         labelStyle={{ color: "#1e1008" }}
                       />
@@ -314,7 +345,7 @@ export default function App() {
         setTopics(t.sort((a, b) => b.count - a.count));
       }
     });
-    api.getArticles().then(articles => {
+    api.getArticles(null).then(articles => {
       if (Array.isArray(articles)) {
         setArticles(articles);
       }
@@ -338,7 +369,7 @@ export default function App() {
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         * { box-sizing: border-box; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        ::-webkit-scrollbar { width: 6px; } 
+        ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #c9b08a; border-radius: 3px; }
       `}</style>
