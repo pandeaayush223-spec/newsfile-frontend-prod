@@ -304,6 +304,7 @@ export default function App() {
   const [topics, setTopics] = useState([]);
   const [articles, setArticles] = useState([]);
   const [selectedArticle, setSelectedArticle] = useState(null);
+  const [articleModalKey, setArticleModalKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTopic, setActiveTopic] = useState(null);
   const [searchQ, setSearchQ] = useState("");
@@ -353,12 +354,15 @@ export default function App() {
           display: "flex", flexDirection: "column", gap: 8,
         }}>
           {searched.slice(0, 50).map((a, i) => (
-            <ArticleCard key={a.id} article={a} onClick={setSelectedArticle} featured={i === 0} />
+            <ArticleCard key={a.id} article={a} onClick={(article) => {
+              setArticleModalKey(prev => prev + 1);
+              setSelectedArticle(article);
+            }} featured={i === 0} />
           ))}
         </div>
       </div>
 
-      <ArticleModal key={selectedArticle?.id} article={selectedArticle} onClose={() => setSelectedArticle(null)} />
+      <ArticleModal key={articleModalKey} article={selectedArticle} onClose={() => setSelectedArticle(null)} />
     </div>
   );
 }
