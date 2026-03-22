@@ -175,22 +175,12 @@ function ArticleModal({ article, onClose }) {
     return () => setFull(null);
   }, [article?.id]);
 
-  useEffect(() => {
-    if (!article) return;
-    console.log("[v0] Article changed to:", article.id);
-    // Reset stats display when article changes
-    setShowStats(false);
-    setStats(null);
-  }, [article?.id]);
-
   const handleStatsClick = () => {
-    console.log("[v0] handleStatsClick - showStats:", showStats, "article.id:", article.id);
     if (showStats) {
       setShowStats(false);
     } else {
       setLoadingStats(true);
       api.getArticleStats(article.id).then(data => {
-        console.log("[v0] Stats fetched for article:", article.id, "data:", data);
         setStats(data);
         setShowStats(true);
         setLoadingStats(false);
@@ -241,7 +231,7 @@ function ArticleModal({ article, onClose }) {
           </div>
         </div>
         <div style={{ padding: "20px 28px", overflowY: "auto", flex: 1 }}>
-          {console.log("[v0] Rendering - showStats:", showStats, "stats:", stats ? "exists" : "null", "article.id:", article.id), showStats && stats ? (
+          {showStats && stats ? (
             <div>
               <p style={{ fontSize: 14, color: "#7a5a38", marginTop: 0, marginBottom: 16 }}>
                 {stats.summary}
@@ -368,7 +358,7 @@ export default function App() {
         </div>
       </div>
 
-      <ArticleModal article={selectedArticle} onClose={() => setSelectedArticle(null)} />
+      <ArticleModal key={selectedArticle?.id} article={selectedArticle} onClose={() => setSelectedArticle(null)} />
     </div>
   );
 }
